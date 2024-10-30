@@ -1,0 +1,29 @@
+name: Build and Push Docker Image for Person Detection Service
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  packages: write
+  contents: read
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout the code
+      uses: actions/checkout@v3
+
+    - name: Log in to GitHub Container Registry
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: echo "${GITHUB_TOKEN}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+    - name: Build Docker image
+      run: docker build -t ghcr.io/deepview-analytics/person_detection_service_yolov8s:latest .
+
+    - name: Push Docker image to GitHub Packages
+      run: docker push ghcr.io/deepview-analytics/person_detection_service_yolov8s:latest
