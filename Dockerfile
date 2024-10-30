@@ -25,14 +25,14 @@ RUN apt-get update && apt-get install -y git \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install GitHub repository dependency
-RUN pip install git+https://github.com/DeepView-Analytics/schemas
 
 # Copy the entire project into the container
 COPY . .
 
 # Expose the application port
 EXPOSE 8000
+EXPOSE 9092
+EXPOSE 6379
 
 # Run the FastAPI application using uvicorn
 CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port $FASTAPI_PORT"]
