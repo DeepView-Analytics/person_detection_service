@@ -8,13 +8,18 @@ ENV PYTHONUNBUFFERED 1
 # Set the working directory
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && \
-    apt-get install -y git ca-certificates && \
-    rm -rf /var/lib/apt/lists/*
+
+
+
 
 # Upgrade pip to avoid compatibility issues
 RUN pip install --upgrade pip
+
+# Install Git and clone the repository
+RUN apt-get update && apt-get install -y git \
+    && git clone https://github.com/DeepView-Analytics/schemas.git /schemas \
+    && pip install /schemas
+
 
 # Copy the requirements file and install dependencies
 COPY requirements.txt .
