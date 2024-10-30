@@ -8,8 +8,7 @@ __pycache__/
 # Ignore the virtual environment directory
 psdetvenv/
 
-# Ignore .env file (if you don't want to track it)
-.env
+
 
 # Ignore any other local configurations or files you don’t want in version control
 *.log
