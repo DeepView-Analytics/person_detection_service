@@ -1,0 +1,9 @@
+# Ignore the tests directory
+tests/
+
+# Ignore Python cache files and directories
+__pycache__/
+*.pyc
+
+# Ignore the virtual environment directory
+psdetvenv/
