@@ -35,4 +35,4 @@ EXPOSE 9092
 EXPOSE 6379
 
 # Run the FastAPI application using uvicorn
-CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port $FASTAPI_PORT"]
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port 8000"]
