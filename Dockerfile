@@ -8,10 +8,6 @@ ENV PYTHONUNBUFFERED 1
 # Set the working directory
 WORKDIR /app
 
-
-
-
-
 # Upgrade pip to avoid compatibility issues
 RUN pip install --upgrade pip
 
