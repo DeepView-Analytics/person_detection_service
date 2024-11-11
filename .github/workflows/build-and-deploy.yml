@@ -51,10 +51,10 @@ jobs:
         run: kubectl config use-context docker-desktop --kubeconfig=$(pwd)/kubeconfig.yaml
 
       - name: Check DNS Resolution
-        run: nslookup kubernetes.docker.internal
+        run: nslookup host.docker.internal
 
       - name: Test Cluster Connectivity
-        run: curl -k https://kubernetes.docker.internal:6443
+        run: curl -k https://host.docker.internal:6443
 
       - name: Deploy to Kubernetes
         run: |
