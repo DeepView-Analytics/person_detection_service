@@ -29,7 +29,7 @@ jobs:
       run: docker push ghcr.io/deepview-analytics/person_detection_service_yolov8s:latest
       
   deploy-to-kubernetes:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: build-and-push
     environment: dev
     steps:
@@ -49,7 +49,7 @@ jobs:
 
       - name: Set Kubernetes Context
         run: kubectl config use-context docker-desktop --kubeconfig=$(pwd)/kubeconfig.yaml
-        
+
       - name: Deploy to Kubernetes
         run: |
           kubectl apply --validate=false -f kubernetes/deployment.yaml --kubeconfig=$(pwd)/kubeconfig.yaml
