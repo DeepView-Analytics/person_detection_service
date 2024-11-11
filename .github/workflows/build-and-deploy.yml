@@ -37,6 +37,9 @@ jobs:
         with:
           version: 'latest'
           kubeconfig: ${{ secrets.KUBECONFIG }}
+      - name: Check Kubeconfig
+        run: echo "${{ secrets.KUBECONFIG }}"
+
       - name: Deploy to Kubernetes
         run: |
           kubectl apply -f kubernetes/deployment.yaml
