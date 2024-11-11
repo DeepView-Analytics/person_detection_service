@@ -49,13 +49,7 @@ jobs:
 
       - name: Set Kubernetes Context
         run: kubectl config use-context docker-desktop --kubeconfig=$(pwd)/kubeconfig.yaml
-
-      - name: Check DNS Resolution
-        run: nslookup host.docker.internal
-
-      - name: Test Cluster Connectivity
-        run: curl -k https://host.docker.internal:6443
-
+        
       - name: Deploy to Kubernetes
         run: |
           kubectl apply --validate=false -f kubernetes/deployment.yaml --kubeconfig=$(pwd)/kubeconfig.yaml
