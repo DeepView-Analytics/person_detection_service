@@ -38,12 +38,21 @@ jobs:
         with:
           version: 'latest'
           kubeconfig: ${{ secrets.KUBECONFIG }}
-      - name: Check Kubeconfig
-        run: echo "${{ secrets.KUBECONFIG }}"
+      - name: Write KUBECONFIG to file
+        run: echo "${{ secrets.KUBECONFIG }}" > kubeconfig.yaml
+
+      - name: Verify KUBECONFIG file
+        run: cat kubeconfig.yaml
+
+      - name: Set KUBECONFIG environment variable
+        run: echo "KUBECONFIG=$(pwd)/kubeconfig.yaml" >> $GITHUB_ENV
+
+      - name: Set Kubernetes Context
+        run: kubectl config use-context docker-desktop --kubeconfig=$(pwd)/kubeconfig.yaml
 
       - name: Deploy to Kubernetes
         run: |
-          kubectl apply -f kubernetes/deployment.yaml
-          kubectl apply -f kubernetes/service.yaml
-          kubectl apply -f kubernetes/hpa.yaml
-          kubectl apply -f kubernetes/network-policy.yaml
+          kubectl apply -f kubernetes/deployment.yaml --kubeconfig=$(pwd)/kubeconfig.yaml
+          kubectl apply -f kubernetes/service.yaml --kubeconfig=$(pwd)/kubeconfig.yaml
+          kubectl apply -f kubernetes/hpa.yaml --kubeconfig=$(pwd)/kubeconfig.yaml
+          kubectl apply -f kubernetes/network-policy.yaml --kubeconfig=$(pwd)/kubeconfig.yaml
