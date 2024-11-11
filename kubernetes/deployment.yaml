@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: person-detection-service
+  namespace: deepview
+spec:
+  selector:
+    matchLabels:
+      app: person-detection-service
+  template:
+    metadata:
+      labels:
+        app: person-detection-service
+    spec:
+      containers:
+      - name: person-detection-service
+        image: ghcr.io/deepview-analytics/person_detection_service_yolov8s:latest
+        envFrom:
+        - configMapRef:
+            name: person-detection-service-env
+        ports:
+        - containerPort: 8000
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "1"
+          limits:
+            memory: "1Gi"
+            cpu: "1"
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: person-detection-service-env
+data:
+  MODEL_PATH: person_detection_service/model/yolov8s.onnx
+  KAFKA_BOOTSTRAP_SERVERS: kafka:9092  # Update if your Kafka cluster runs on a different host
+  KAFKA_API_VERSION: 7,3,2
+  KAFKA_TOPIC_REQUESTS: person_detection_requests
+  KAFKA_TOPIC_RESPONSES: person_detected_response
+  FASTAPI_PORT: "8000"
+  REDIS_SERVER: 'redis'  # Update if Redis runs on a different host
+  REDIS_PORT: "6379"
+  REDIS_DB_ID: "0"
+  RESPONSE_BATCH_SIZE: "10"
