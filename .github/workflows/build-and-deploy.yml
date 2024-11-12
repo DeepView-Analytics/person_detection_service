@@ -36,80 +36,43 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
   
-      # Step 1: Set up SSH connection to WSL
+      # Step 1: Set up SSH key for GitHub Actions
       - name: Set up SSH key for GitHub Actions
         uses: webfactory/ssh-agent@v0.5.3
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
   
-      # Step 2: Set up kubectl
-      - name: Set up kubectl
-        uses: azure/setup-kubectl@v3
-        with:
-          version: 'latest'
-          kubeconfig: ${{ secrets.KUBECONFIG }}
-  
-      # Step 3: Write KUBECONFIG to a file and verify
-      - name: Write KUBECONFIG to file
-        run: echo "${{ secrets.KUBECONFIG }}" > kubeconfig.yaml
-  
-      - name: Verify KUBECONFIG file
-        run: cat kubeconfig.yaml
-  
-      # Step 4: Set the KUBECONFIG environment variable
-      - name: Set KUBECONFIG environment variable
-        run: echo "KUBECONFIG=$(pwd)/kubeconfig.yaml" >> $GITHUB_ENV
-  
-      # Debug Step: Check if kubectl is working
-      - name: Verify kubectl version and config
-        run: |
-          kubectl version --client
-          kubectl config view
-  
-      # Step 5: Debugging SSH connection and network settings
+      # Step 2: Debug SSH connection using Localtunnel URL
       - name: Debug SSH connection to WSL
         run: |
-          WSL_IP=172.19.15.127
-          echo "WSL IP: $WSL_IP"
+          # The Localtunnel URL you got from the previous command
+          WSL_SSH_URL="salty-streets-admire.loca.lt"
+          WSL_SSH_PORT="22"  # Default SSH port
+          echo "Attempting to connect to WSL via SSH at ${WSL_SSH_URL}:${WSL_SSH_PORT}"
           
-          # Debugging SSH connection to WSL
-          echo "Attempting to connect to WSL over SSH..."
-          ssh -vvv -o StrictHostKeyChecking=no hamza@${WSL_IP} exit || echo "SSH connection failed"
-        
-      # Step 6: Establish SSH Connection to WSL Docker Desktop and deploy Kubernetes resources
-      - name: Establish SSH Connection to WSL Docker Desktop and Apply Kubernetes Config
+          # Attempt to connect to the WSL instance using SSH
+          ssh -o StrictHostKeyChecking=no hamza@${WSL_SSH_URL} -p ${WSL_SSH_PORT} exit || echo "SSH connection failed"
+  
+      # Step 3: SSH into WSL and apply Kubernetes configuration
+      - name: Establish SSH connection to WSL Docker Desktop and Apply Kubernetes Config
         run: |
-          WSL_IP=172.19.15.127
-          echo "WSL IP: $WSL_IP"
+          # The Localtunnel URL you got from the previous command
+          WSL_SSH_URL="salty-streets-admire.loca.lt"
+          WSL_SSH_PORT="22"  # Default SSH port
           
-          # Connect to WSL instance over SSH and apply Kubernetes config
-          ssh -t -o StrictHostKeyChecking=no hamza@${WSL_IP} << EOF
+          echo "Connecting to WSL over SSH..."
+          
+          # SSH into your WSL instance and apply the Kubernetes configuration
+          ssh -t -o StrictHostKeyChecking=no hamza@${WSL_SSH_URL} -p ${WSL_SSH_PORT} << EOF
             echo "Connected to WSL and applying Kubernetes config..."
   
             # Set the kubeconfig and apply Kubernetes manifests
             export KUBECONFIG=/path/to/kubeconfig.yaml
             kubectl config use-context docker-desktop --kubeconfig=$KUBECONFIG
-  
+            
             kubectl apply -f /path/to/kubernetes/deployment.yaml --kubeconfig=$KUBECONFIG
             kubectl apply -f /path/to/kubernetes/service.yaml --kubeconfig=$KUBECONFIG
             kubectl apply -f /path/to/kubernetes/hpa.yaml --kubeconfig=$KUBECONFIG
             kubectl apply -f /path/to/kubernetes/network-policy.yaml --kubeconfig=$KUBECONFIG
           EOF
-  
-      # Step 7: Debugging SSH key and connection status in case of failure
-      - name: Debug SSH key and known hosts
-        run: |
-          # Check the SSH key in use
-          echo "Checking SSH key..."
-          ls -l ~/.ssh
-          cat ~/.ssh/id_rsa || echo "Private key not found"
-  
-          # Add the SSH host to known_hosts for debugging
-          echo "Adding WSL host to known_hosts..."
-          ssh-keyscan -H ${WSL_IP} >> ~/.ssh/known_hosts
-          cat ~/.ssh/known_hosts
-  
-          # Verify SSH connection again
-          echo "Verifying SSH connection to WSL..."
-          ssh -o StrictHostKeyChecking=no hamza@${WSL_IP} exit
   
