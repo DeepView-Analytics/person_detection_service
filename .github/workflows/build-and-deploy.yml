@@ -67,7 +67,7 @@ jobs:
           echo "WSL IP: $WSL_IP"
           
           # Connect to WSL instance over SSH and apply Kubernetes config
-          ssh -o StrictHostKeyChecking=no user@${WSL_IP} << EOF
+          ssh -t -o StrictHostKeyChecking=no user@${WSL_IP} << EOF
             echo "Connected to WSL and applying Kubernetes config..."
 
             # Set the kubeconfig and apply Kubernetes manifests
