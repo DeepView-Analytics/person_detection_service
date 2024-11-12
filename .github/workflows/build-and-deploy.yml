@@ -74,7 +74,7 @@ jobs:
           
           # Debugging SSH connection to WSL
           echo "Attempting to connect to WSL over SSH..."
-          ssh -vvv -o StrictHostKeyChecking=no user@${WSL_IP} exit || echo "SSH connection failed"
+          ssh -vvv -o StrictHostKeyChecking=no hamza@${WSL_IP} exit || echo "SSH connection failed"
         
       # Step 6: Establish SSH Connection to WSL Docker Desktop and deploy Kubernetes resources
       - name: Establish SSH Connection to WSL Docker Desktop and Apply Kubernetes Config
@@ -83,7 +83,7 @@ jobs:
           echo "WSL IP: $WSL_IP"
           
           # Connect to WSL instance over SSH and apply Kubernetes config
-          ssh -t -o StrictHostKeyChecking=no user@${WSL_IP} << EOF
+          ssh -t -o StrictHostKeyChecking=no hamza@${WSL_IP} << EOF
             echo "Connected to WSL and applying Kubernetes config..."
   
             # Set the kubeconfig and apply Kubernetes manifests
@@ -111,5 +111,5 @@ jobs:
   
           # Verify SSH connection again
           echo "Verifying SSH connection to WSL..."
-          ssh -o StrictHostKeyChecking=no user@${WSL_IP} exit
+          ssh -o StrictHostKeyChecking=no hamza@${WSL_IP} exit
   
