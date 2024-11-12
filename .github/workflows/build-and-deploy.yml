@@ -54,7 +54,7 @@ jobs:
           kind: Config
           clusters:
           - cluster:
-              server: https://${NGROK_URL}:${NGROK_PORT}
+              server: https://2.tcp.eu.ngrok.io:11708  
               insecure-skip-tls-verify: true
             name: ngrok-cluster
           contexts:
@@ -66,13 +66,14 @@ jobs:
           users:
           - name: github-user
             user:
-              token: ${KUBE_TOKEN}
+              token: ${KUBE_TOKEN}  
           EOF
+
           export KUBECONFIG=$(pwd)/kubeconfig
       
-      - name: Test Kubernetes API Connectivity
-        run: |
-          kubectl cluster-info
+      - name: Test Kubernetes Connection
+        run: kubectl get nodes
+        
           
       # Step 3: Apply Kubernetes manifests
       - name: Apply Kubernetes Configuration
