@@ -46,12 +46,12 @@ jobs:
           SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
         run: |
           # The Localtunnel URL you got from the previous command
-          WSL_SSH_URL="salty-streets-admire.loca.lt"
+          WSL_SSH_URL="wicked-bushes-retire.loca.lt"
           WSL_SSH_PORT="22"  # Default SSH port
 
           # Attempt to connect to the WSL instance using SSH
           echo "Attempting to connect to WSL via SSH at ${WSL_SSH_URL}:${WSL_SSH_PORT}"
-          sshpass -p "$SSH_PASSWORD" ssh -v -o StrictHostKeyChecking=no -o PreferredAuthentications=password -p ${WSL_SSH_PORT} hamza@${WSL_SSH_URL} exit || echo "SSH connection failed"
+          sshpass -p "$SSH_PASSWORD" ssh -v -o StrictHostKeyChecking=no -o PreferredAuthentications=password -o UserKnownHostsFile=/dev/null -o "HostKeyAlias=41.226.7.130" -p ${WSL_SSH_PORT} hamza@${WSL_SSH_URL} exit || echo "SSH connection failed"
 
       # Step 3: SSH into WSL and apply Kubernetes configuration
       - name: Establish SSH connection to WSL Docker Desktop and Apply Kubernetes Config
@@ -59,13 +59,13 @@ jobs:
           SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
         run: |
           # The Localtunnel URL you got from the previous command
-          WSL_SSH_URL="salty-streets-admire.loca.lt"
+          WSL_SSH_URL="wicked-bushes-retire.loca.lt"
           WSL_SSH_PORT="22"  # Default SSH port
 
           echo "Connecting to WSL over SSH..."
 
           # SSH into your WSL instance and apply the Kubernetes configuration
-          sshpass -p "$SSH_PASSWORD" ssh -t -o StrictHostKeyChecking=no -o PreferredAuthentications=password -p ${WSL_SSH_PORT} hamza@${WSL_SSH_URL} << EOF
+          sshpass -p "$SSH_PASSWORD" ssh -t -o StrictHostKeyChecking=no -o PreferredAuthentications=password -o UserKnownHostsFile=/dev/null -o "HostKeyAlias=41.226.7.130" -p ${WSL_SSH_PORT} hamza@${WSL_SSH_URL} << EOF
             echo "Connected to WSL and applying Kubernetes config..."
 
             # Set the kubeconfig and apply Kubernetes manifests
