@@ -43,14 +43,12 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y kubectl
 
-      # Step 2: Set up KUBECONFIG to access WSL Kubernetes API via ngrok
-      - name: Configure kubectl for ngrok tunnel
+      - name: Configure kubeconfig for ngrok tunnel
         env:
-          NGROK_URL: "2.tcp.eu.ngrok.io"   # Replace with your ngrok URL
-          NGROK_PORT: "11708"              # Replace with the ngrok port from your output
+          NGROK_URL: "2.tcp.eu.ngrok.io"    # Use your ngrok URL
+          NGROK_PORT: "11708"               # Use the ngrok port from your output
           KUBE_TOKEN: ${{ secrets.KUBE_TOKEN }}
         run: |
-          # Configure kubectl to use the ngrok URL and your Kubernetes token
           cat <<EOF > ./kubeconfig
           apiVersion: v1
           kind: Config
@@ -65,16 +63,17 @@ jobs:
               user: github-user
             name: ngrok-context
           current-context: ngrok-context
-          preferences: {}
           users:
           - name: github-user
             user:
               token: ${KUBE_TOKEN}
           EOF
-
-          export KUBECONFIG=./kubeconfig
-          kubectl config use-context ngrok-context
-
+          export KUBECONFIG=$(pwd)/kubeconfig
+      
+      - name: Test Kubernetes API Connectivity
+        run: |
+          kubectl cluster-info
+          
       # Step 3: Apply Kubernetes manifests
       - name: Apply Kubernetes Configuration
         run: |
