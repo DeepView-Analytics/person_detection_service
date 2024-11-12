@@ -48,16 +48,10 @@ jobs:
           # The Localtunnel URL you got from the previous command
           WSL_SSH_URL="salty-streets-admire.loca.lt"
           WSL_SSH_PORT="22"  # Default SSH port
-          
-          # Clear any previous keys from the agent
-          ssh-add -D
-          
-          # Add the correct private key to the SSH agent
-          ssh-add ~/.ssh/id_rsa
-          
+           
           # Attempt to connect to the WSL instance using SSH
           echo "Attempting to connect to WSL via SSH at ${WSL_SSH_URL}:${WSL_SSH_PORT}"
-          ssh -o StrictHostKeyChecking=no -o IdentitiesOnly=yes -i ~/.ssh/id_rsa hamza@${WSL_SSH_URL} -p ${WSL_SSH_PORT} exit || echo "SSH connection failed"
+          ssh -v -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no -o IdentitiesOnly=yes -p ${WSL_SSH_PORT} hamza@${WSL_SSH_URL} exit || echo "SSH connection failed"
 
       # Step 3: SSH into WSL and apply Kubernetes configuration
       - name: Establish SSH connection to WSL Docker Desktop and Apply Kubernetes Config
