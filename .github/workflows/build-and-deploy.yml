@@ -42,6 +42,9 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
+      - name: List loaded SSH keys
+        run: ssh-add -l
+
       # Step 2: Debug SSH connection using Localtunnel URL
       - name: Debug SSH connection to WSL
         run: |
