@@ -35,24 +35,28 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
-  
+
       # Step 1: Set up SSH key for GitHub Actions
       - name: Set up SSH key for GitHub Actions
         uses: webfactory/ssh-agent@v0.5.3
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-  
+
       # Step 2: Debug SSH connection using Localtunnel URL
       - name: Debug SSH connection to WSL
         run: |
           # The Localtunnel URL you got from the previous command
           WSL_SSH_URL="salty-streets-admire.loca.lt"
           WSL_SSH_PORT="22"  # Default SSH port
-          echo "Attempting to connect to WSL via SSH at ${WSL_SSH_URL}:${WSL_SSH_PORT}"
+          
+          # Clear any previous keys in SSH agent and add the correct one
+          ssh-add -D
+          ssh-add ~/.ssh/id_rsa
           
           # Attempt to connect to the WSL instance using SSH
-          ssh -o StrictHostKeyChecking=no hamza@${WSL_SSH_URL} -p ${WSL_SSH_PORT} exit || echo "SSH connection failed"
-  
+          echo "Attempting to connect to WSL via SSH at ${WSL_SSH_URL}:${WSL_SSH_PORT}"
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no -o IdentitiesOnly=yes hamza@${WSL_SSH_URL} -p ${WSL_SSH_PORT} exit || echo "SSH connection failed"
+
       # Step 3: SSH into WSL and apply Kubernetes configuration
       - name: Establish SSH connection to WSL Docker Desktop and Apply Kubernetes Config
         run: |
@@ -63,9 +67,9 @@ jobs:
           echo "Connecting to WSL over SSH..."
           
           # SSH into your WSL instance and apply the Kubernetes configuration
-          ssh -t -o StrictHostKeyChecking=no hamza@${WSL_SSH_URL} -p ${WSL_SSH_PORT} << EOF
+          ssh -t -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no -o IdentitiesOnly=yes hamza@${WSL_SSH_URL} -p ${WSL_SSH_PORT} << EOF
             echo "Connected to WSL and applying Kubernetes config..."
-  
+
             # Set the kubeconfig and apply Kubernetes manifests
             export KUBECONFIG=/path/to/kubeconfig.yaml
             kubectl config use-context docker-desktop --kubeconfig=$KUBECONFIG
@@ -75,4 +79,3 @@ jobs:
             kubectl apply -f /path/to/kubernetes/hpa.yaml --kubeconfig=$KUBECONFIG
             kubectl apply -f /path/to/kubernetes/network-policy.yaml --kubeconfig=$KUBECONFIG
           EOF
-  
