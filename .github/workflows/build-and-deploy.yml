@@ -63,7 +63,7 @@ jobs:
       # Step 5: Establish SSH connection to WSL (Docker Desktop Kubernetes)
       - name: Establish SSH Connection to WSL Docker Desktop
         run: |
-          WSL_IP=$(ip addr show eth0 | grep inet | awk '{ print $2 }' | cut -d/ -f1)
+          WSL_IP=172.19.15.127
           echo "WSL IP: $WSL_IP"
           
           # Connect to WSL instance over SSH and apply Kubernetes config
