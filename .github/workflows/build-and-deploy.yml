@@ -12,7 +12,7 @@ permissions:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout the code
       uses: actions/checkout@v3
@@ -37,48 +37,35 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # Step 1: Install kubectl
       - name: Install kubectl
         run: |
           sudo apt-get update
           sudo apt-get install -y kubectl
 
-      - name: Configure kubeconfig for ngrok tunnel
+      - name: Set Kubernetes environment variables
         env:
-          NGROK_URL: "2.tcp.eu.ngrok.io"    
+          KUBE_SERVER: "https://d4fe-41-226-7-130.ngrok-free.app"  
           KUBE_TOKEN: ${{ secrets.KUBE_TOKEN }}
         run: |
-          cat <<EOF > ./kubeconfig
-          apiVersion: v1
-          kind: Config
-          clusters:
-          - cluster:
-              server: https://d4fe-41-226-7-130.ngrok-free.app 
-              insecure-skip-tls-verify: true
-            name: ngrok-cluster
-          contexts:
-          - context:
-              cluster: ngrok-cluster
-              user: github-user
-            name: ngrok-context
-          current-context: ngrok-context
-          users:
-          - name: github-user
-            user:
-              token: ${KUBE_TOKEN}  
-          EOF
+          export KUBERNETES_SERVICE_HOST=$(echo $KUBE_SERVER | awk -F[/:] '{print $4}')
+          export KUBERNETES_SERVICE_PORT=$(echo $KUBE_SERVER | awk -F[/:] '{print $5}')
+          export KUBE_TOKEN=$KUBE_TOKEN
 
-          export KUBECONFIG=$(pwd)/kubeconfig
-      
       - name: Test Kubernetes Connection
-        run: kubectl get nodes
-        
-          
-      # Step 3: Apply Kubernetes manifests
-      - name: Apply Kubernetes Configuration
+        env:
+          KUBERNETES_SERVICE_HOST: ${{ steps.set-kubernetes-env.outputs.KUBERNETES_SERVICE_HOST }}
+          KUBERNETES_SERVICE_PORT: ${{ steps.set-kubernetes-env.outputs.KUBERNETES_SERVICE_PORT }}
+          KUBE_TOKEN: ${{ secrets.KUBE_TOKEN }}
         run: |
-          kubectl apply -f ./kubernetes/deployment.yaml --validate=false
-          kubectl apply -f ./kubernetes/service.yaml --validate=false
-          kubectl apply -f ./kubernetes/hpa.yaml --validate=false
-          kubectl apply -f ./kubernetes/network-policy.yaml --validate=false
+          kubectl --server=https://$KUBERNETES_SERVICE_HOST:$KUBERNETES_SERVICE_PORT --token=$KUBE_TOKEN get nodes
 
+      - name: Apply Kubernetes Configuration
+        env:
+          KUBERNETES_SERVICE_HOST: ${{ steps.set-kubernetes-env.outputs.KUBERNETES_SERVICE_HOST }}
+          KUBERNETES_SERVICE_PORT: ${{ steps.set-kubernetes-env.outputs.KUBERNETES_SERVICE_PORT }}
+          KUBE_TOKEN: ${{ secrets.KUBE_TOKEN }}
+        run: |
+          kubectl --server=https://$KUBERNETES_SERVICE_HOST:$KUBERNETES_SERVICE_PORT --token=$KUBE_TOKEN apply -f ./kubernetes/deployment.yaml --validate=false
+          kubectl --server=https://$KUBERNETES_SERVICE_HOST:$KUBERNETES_SERVICE_PORT --token=$KUBE_TOKEN apply -f ./kubernetes/service.yaml --validate=false
+          kubectl --server=https://$KUBERNETES_SERVICE_HOST:$KUBERNETES_SERVICE_PORT --token=$KUBE_TOKEN apply -f ./kubernetes/hpa.yaml --validate=false
+          kubectl --server=https://$KUBERNETES_SERVICE_HOST:$KUBERNETES_SERVICE_PORT --token=$KUBE_TOKEN apply -f ./kubernetes/network-policy.yaml --validate=false
