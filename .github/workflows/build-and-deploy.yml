@@ -58,33 +58,33 @@ jobs:
     - name: Push Docker image to GitHub Packages
       run: docker push ghcr.io/deepview-analytics/person_detection_service_yolov8s:latest
 
-    deploy-to-kubernetes:
-      runs-on: ubuntu-latest
-      needs: build-and-push
-      environment: dev
+  deploy-to-kubernetes:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    environment: dev
 
-      steps:
-        - name: Checkout repository
-          uses: actions/checkout@v3
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-        - name: Install kubectl
-          run: |
-            sudo apt-get update
-            sudo apt-get install -y kubectl
+      - name: Install kubectl
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y kubectl
 
-        - name: Test Kubernetes Connection
-          env:
-            KUBE_SERVER: "https://d4fe-41-226-7-130.ngrok-free.app"  # Your Ngrok URL
-            KUBE_TOKEN: ${{ secrets.KUBE_TOKEN }}
-          run: |
-            kubectl get nodes --server=$KUBE_SERVER --token=$KUBE_TOKEN --insecure-skip-tls-verify
+      - name: Test Kubernetes Connection
+        env:
+          KUBE_SERVER: "https://d4fe-41-226-7-130.ngrok-free.app"  # Your Ngrok URL
+          KUBE_TOKEN: ${{ secrets.KUBE_TOKEN }}
+        run: |
+          kubectl get nodes --server=$KUBE_SERVER --token=$KUBE_TOKEN --insecure-skip-tls-verify
 
-        - name: Apply Kubernetes Configuration
-          env:
-            KUBE_SERVER: "https://d4fe-41-226-7-130.ngrok-free.app"  # Your Ngrok URL
-            KUBE_TOKEN: ${{ secrets.KUBE_TOKEN }}
-          run: |
-            kubectl apply -f ./kubernetes/deployment.yaml --server=$KUBE_SERVER --token=$KUBE_TOKEN --insecure-skip-tls-verify --validate=false
-            kubectl apply -f ./kubernetes/service.yaml --server=$KUBE_SERVER --token=$KUBE_TOKEN --insecure-skip-tls-verify --validate=false
-            kubectl apply -f ./kubernetes/hpa.yaml --server=$KUBE_SERVER --token=$KUBE_TOKEN --insecure-skip-tls-verify --validate=false
-            kubectl apply -f ./kubernetes/network-policy.yaml --server=$KUBE_SERVER --token=$KUBE_TOKEN --insecure-skip-tls-verify --validate=false
+      - name: Apply Kubernetes Configuration
+        env:
+          KUBE_SERVER: "https://d4fe-41-226-7-130.ngrok-free.app"  # Your Ngrok URL
+          KUBE_TOKEN: ${{ secrets.KUBE_TOKEN }}
+        run: |
+          kubectl apply -f ./kubernetes/deployment.yaml --server=$KUBE_SERVER --token=$KUBE_TOKEN --insecure-skip-tls-verify --validate=false
+          kubectl apply -f ./kubernetes/service.yaml --server=$KUBE_SERVER --token=$KUBE_TOKEN --insecure-skip-tls-verify --validate=false
+          kubectl apply -f ./kubernetes/hpa.yaml --server=$KUBE_SERVER --token=$KUBE_TOKEN --insecure-skip-tls-verify --validate=false
+          kubectl apply -f ./kubernetes/network-policy.yaml --server=$KUBE_SERVER --token=$KUBE_TOKEN --insecure-skip-tls-verify --validate=false
