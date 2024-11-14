@@ -57,7 +57,7 @@ jobs:
         run: |
           echo "Testing Kubernetes connection..."
           kubectl get nodes --server=$KUBE_SERVER --token=$KUBE_TOKEN --insecure-skip-tls-verify
-
+          
       - name: Apply Kubernetes Configuration
         env:
           KUBE_SERVER: ${{ secrets.KUBE_SERVER }}
