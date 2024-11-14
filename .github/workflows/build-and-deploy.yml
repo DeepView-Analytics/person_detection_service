@@ -42,18 +42,36 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y kubectl
 
-      - name: Test Kubernetes Connection
+      - name: Debug - Show secrets (only for debugging purposes, avoid exposing tokens in logs)
         env:
-          KUBE_SERVER: "https://d4fe-41-226-7-130.ngrok-free.app"  # Your Ngrok URL
+          KUBE_SERVER: ${{ secrets.KUBE_SERVER }}
           KUBE_TOKEN: ${{ secrets.KUBE_TOKEN }}
         run: |
+          echo "KUBE_SERVER: $KUBE_SERVER"
+          echo "KUBE_TOKEN: $KUBE_TOKEN"
+
+      - name: Test Kubernetes Connection
+        env:
+          KUBE_SERVER: ${{ secrets.KUBE_SERVER }}
+          KUBE_TOKEN: ${{ secrets.KUBE_TOKEN }}
+        run: |
+          echo "Testing Kubernetes connection..."
           kubectl get nodes --server=$KUBE_SERVER --token=$KUBE_TOKEN --insecure-skip-tls-verify
+
+      - name: Test API access with curl
+        env:
+          KUBE_SERVER: ${{ secrets.KUBE_SERVER }}
+          KUBE_TOKEN: ${{ secrets.KUBE_TOKEN }}
+        run: |
+          echo "Testing API access with curl..."
+          curl -k -H "Authorization: Bearer $KUBE_TOKEN" https://$KUBE_SERVER/api
 
       - name: Apply Kubernetes Configuration
         env:
-          KUBE_SERVER: "https://8951-196-179-254-81.ngrok-free.app"  # Your Ngrok URL
+          KUBE_SERVER: ${{ secrets.KUBE_SERVER }}
           KUBE_TOKEN: ${{ secrets.KUBE_TOKEN }}
         run: |
+          echo "Applying Kubernetes configuration..."
           kubectl apply -f ./kubernetes/deployment.yaml --server=$KUBE_SERVER --token=$KUBE_TOKEN --insecure-skip-tls-verify --validate=false
           kubectl apply -f ./kubernetes/service.yaml --server=$KUBE_SERVER --token=$KUBE_TOKEN --insecure-skip-tls-verify --validate=false
           kubectl apply -f ./kubernetes/hpa.yaml --server=$KUBE_SERVER --token=$KUBE_TOKEN --insecure-skip-tls-verify --validate=false
