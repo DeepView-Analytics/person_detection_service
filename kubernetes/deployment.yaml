@@ -12,6 +12,8 @@ spec:
       labels:
         app: person-detection-service
     spec:
+      imagePullSecrets:
+      - name: ghcr-secret
       containers:
       - name: person-detection-service
         image: ghcr.io/deepview-analytics/person_detection_service_yolov8s:latest
