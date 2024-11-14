@@ -51,7 +51,7 @@ jobs:
 
       - name: Apply Kubernetes Configuration
         env:
-          KUBE_SERVER: "https://d4fe-41-226-7-130.ngrok-free.app"  # Your Ngrok URL
+          KUBE_SERVER: "https://8951-196-179-254-81.ngrok-free.app"  # Your Ngrok URL
           KUBE_TOKEN: ${{ secrets.KUBE_TOKEN }}
         run: |
           kubectl apply -f ./kubernetes/deployment.yaml --server=$KUBE_SERVER --token=$KUBE_TOKEN --insecure-skip-tls-verify --validate=false
