@@ -45,8 +45,7 @@ jobs:
 
       - name: Configure kubeconfig for ngrok tunnel
         env:
-          NGROK_URL: "2.tcp.eu.ngrok.io"    # Use your ngrok URL
-          NGROK_PORT: "11708"               # Use the ngrok port from your output
+          NGROK_URL: "2.tcp.eu.ngrok.io"    
           KUBE_TOKEN: ${{ secrets.KUBE_TOKEN }}
         run: |
           cat <<EOF > ./kubeconfig
@@ -54,7 +53,7 @@ jobs:
           kind: Config
           clusters:
           - cluster:
-              server: https://2.tcp.eu.ngrok.io:11708  
+              server: https://d4fe-41-226-7-130.ngrok-free.app 
               insecure-skip-tls-verify: true
             name: ngrok-cluster
           contexts:
