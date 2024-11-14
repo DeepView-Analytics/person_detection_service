@@ -58,14 +58,6 @@ jobs:
           echo "Testing Kubernetes connection..."
           kubectl get nodes --server=$KUBE_SERVER --token=$KUBE_TOKEN --insecure-skip-tls-verify
 
-      - name: Test API access with curl
-        env:
-          KUBE_SERVER: ${{ secrets.KUBE_SERVER }}
-          KUBE_TOKEN: ${{ secrets.KUBE_TOKEN }}
-        run: |
-          echo "Testing API access with curl..."
-          curl -k -H "Authorization: Bearer $KUBE_TOKEN" https://$KUBE_SERVER/api
-
       - name: Apply Kubernetes Configuration
         env:
           KUBE_SERVER: ${{ secrets.KUBE_SERVER }}
