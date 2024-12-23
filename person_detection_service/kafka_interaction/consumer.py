@@ -1,10 +1,9 @@
+from itertools import chain
 import json
 import os
 from aiokafka import AIOKafkaConsumer
-
 import redis
-from v1.detectionrequest import DetectionRequest 
-from v1.objectdetected import ObjectDetected
+from person_detection_service.redis_clients.RedisManager import RedisManager
 from .producer import KafkaProducerService
 from ..model.yolov8 import PersonDetector
 
@@ -14,24 +13,20 @@ class KafkaConsumerService:
         self.topic = topic
         self.consumer = None  # Initialize the consumer as None
         self.detector = PersonDetector()
+        self.frames_metadata_manager_client = RedisManager(db=1)
+        self.persons_metadata_manager_client = RedisManager(db=2)
+        self.frames_data_manager_client = RedisManager(db=0)
         self.producer = KafkaProducerService()
-        self.redis_client = redis.StrictRedis(
-            host=os.getenv('REDIS_SERVER', 'localhost'), 
-            port=os.getenv('REDIS_PORT', 6379), 
-            db=os.getenv('REDIS_DB_ID', 0)
-        )
 
     async def start(self):
-        # Initialize the consumer
         self.consumer = AIOKafkaConsumer(
             self.topic,
             bootstrap_servers=self.bootstrap_servers,
-            value_deserializer=lambda x: x.decode('utf-8')
+            value_deserializer=lambda x: json.loads(x.decode('utf-8'))
 
         )
         await self.consumer.start()
 
-        # Start the producer
         await self.producer.start()
 
         try:
@@ -43,17 +38,44 @@ class KafkaConsumerService:
     async def consume_messages(self):
         async for message in self.consumer:
             print("There is a message")
-            request = json.loads(message.value)
-            detection_request = DetectionRequest(**request)
-            keys = [f"{frame.camera_id}:{frame.timestamp}" for frame in detection_request.frames]
-            frame_data = self.redis_client.mget(keys)
-
-            # Run detection asynchronously
+            frames_keys = message.value
+            frame_data = self.frames_data_manager_client.get_many(frames_keys)
             detection = await self.detector.detect_persons(frame_data)
-            results = []
-            
-            for i, frame in enumerate(detection_request.frames):
-                results.append(ObjectDetected(camera_id=frame.camera_id, object_detected=detection[i], timestamp=frame.timestamp))
-            
-            # Send response to Kafka
-            await self.producer.send_detection_response(detection_request.request_id, results)
+            print(detection)
+            response = []
+            frames_metadata_update = []
+            frames_metadata_keys = []
+            persons_metadata_keys = []
+            persons_metadata_update = []
+            for i, frame_key in enumerate(frames_keys):
+                persons_ids = []
+                detections = []
+                frame_metadata_key = f"metadata:{frame_key}"
+                frames_metadata_keys.append(frame_metadata_key)
+                
+                for person in detection[i]:
+
+                    person_key  = f"{frame_key}:{person.person_key}"
+                    person.frame_key = frame_key
+                    person_metadata_key = f"metadata:{person_key}"
+                    print(f"person_metadata_key={person_metadata_key}")
+                    detection_tuple = (person_metadata_key,person.bbox)
+                    detections.append(detection_tuple)
+                    persons_ids.append(person.person_key)
+                    
+                    persons_metadata_keys.append(person_metadata_key)
+                    person_metadata  = person.model_dump()
+                    persons_metadata_update.append(person_metadata)
+
+                serialized_detections = json.dumps(persons_ids)
+                frames_metadata_update.append(serialized_detections)
+                response.append(detections)
+            print(type(frames_metadata_update[0]))
+            print(f"-{frames_metadata_keys[0]}-")
+
+            self.frames_metadata_manager_client.update_by_field_many(frames_metadata_keys,"detected_persons",frames_metadata_update)
+            test = self.frames_metadata_manager_client.get_one(frames_metadata_keys[0],"detected_persons")
+            print("------------------------")
+            print(test)
+            self.persons_metadata_manager_client.save_many(persons_metadata_keys,persons_metadata_update)
+            await self.producer.send_detection_response(response)

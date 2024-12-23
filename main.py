@@ -22,7 +22,7 @@ async def lifespan(app: FastAPI):
     yield
     # Shutdown logic
     await producer.close()
-    await consumer.consumer.stop()  # Ensure consumer is stopped
+    await consumer.consumer.stop()  
 
 app = FastAPI(lifespan=lifespan)
 

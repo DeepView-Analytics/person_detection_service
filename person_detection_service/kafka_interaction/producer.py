@@ -1,12 +1,12 @@
 import json
 import logging
+import operator
 import os
 from aiokafka import AIOKafkaProducer
-from v1.detectionresponse import DetectionResponse
 from typing import List, Tuple
 from math import ceil
-from v1.partitioneddetectionbatch import PartitionedDetectionBatch
-from v1.objectdetected import ObjectDetected
+from v3.partitioneddetectionbatch import PartitionedDetectionBatch
+
 
 class KafkaProducerService:
     def __init__(self, bootstrap_servers='127.0.0.1:9092', topic='person_detected_response'):
@@ -17,17 +17,23 @@ class KafkaProducerService:
 
 
     async def start(self):
-        self.producer = AIOKafkaProducer(
-            bootstrap_servers=self.bootstrap_servers,
-            value_serializer=lambda v: json.dumps(v).encode('utf-8')
-        )
-        await self.producer.start()
+        try:
+            self.producer = AIOKafkaProducer(
+                bootstrap_servers=self.bootstrap_servers,
+                value_serializer=lambda v: v.encode('utf-8')
+            )
+            await self.producer.start()
+        except Exception as e:
+            logging.error(f"Failed to start Kafka producer: {e}", exc_info=True)
+            raise e
 
 
 
 
 
-    def balance_batches(self , detections: List[ObjectDetected], max_bboxes_per_batch ):
+    def balance_batches(self , detections: List[List[Tuple]], max_bboxes_per_batch ):
+        
+
         pile = [(detection, 1) for detection in detections]
   
         grouped_batches = []
@@ -35,13 +41,15 @@ class KafkaProducerService:
         current_batch = []
         while pile:
             current_item, returning_times = pile.pop(0)
-            detections = current_item.object_detected
-
+            detections = current_item
+        
             if len(detections) < free_space:
+                keys = list(map(operator.itemgetter(0), detections))
+                dets = list(map(operator.itemgetter(1), detections))
                 partitioned_batch = PartitionedDetectionBatch(
-                    camera_id=current_item.camera_id,
-                    timestamp=current_item.timestamp,
-                    object_detected=detections,
+                    frame_key =  ":".join(keys[0].split(":", 3)[1:3]),
+                    person_keys = keys,
+                    person_bbox = dets,
                     partition_number=returning_times ,
                     total_partitions=returning_times  
                 )
@@ -50,10 +58,12 @@ class KafkaProducerService:
                 free_space -= len(detections)
             else:
                 remaining_detections = detections[free_space:]
+                keys = list(map(operator.itemgetter(0), detections[:free_space]))
+                dets = list(map(operator.itemgetter(1), detections[:free_space]))
                 partitioned_batch = PartitionedDetectionBatch(
-                    camera_id=current_item.camera_id,
-                    timestamp=current_item.timestamp,
-                    object_detected=detections[:free_space],
+                    frame_key =  ":".join(keys[0].split(":", 3)[1:3]),
+                    person_keys = keys,
+                    person_bbox = dets,
                     partition_number=returning_times ,
                     total_partitions=ceil(len(remaining_detections) / max_bboxes_per_batch) + returning_times
                 )
@@ -63,31 +73,22 @@ class KafkaProducerService:
                 current_batch = []
 
                 if remaining_detections:
-                    pile.insert(0, (ObjectDetected(
-                        camera_id=current_item.camera_id,
-                        timestamp=current_item.timestamp,
-                        object_detected=remaining_detections
-                    ), returning_times +1))
+                    pile.insert(0, (remaining_detections, returning_times +1))
                 free_space = max_bboxes_per_batch
 
         if current_batch :
             grouped_batches.append(current_batch)
-        print(f"len of batchs to send : {len(grouped_batches)}")
+  
         return grouped_batches
 
 
 
-    async def send_detection_response(self, request_id, detections):
-
-        print("Trying to cast on DetectionResponse")
+    async def send_detection_response(self, detections):
         batchs = self.balance_batches(detections,max_bboxes_per_batch=self.max_bboxes_per_batch)
-        print(len(batchs))
+        print(f"len batchs = {len(batchs)}")
         for batch in batchs : 
-
-            response_message = DetectionResponse(request_id=request_id, detection=batch)
-            print("Casted on DetectionResponse!")
-            response_message = response_message.model_dump()
-
+            print(len(batch))
+            response_message = json.dumps([partition.model_dump() for partition in batch])
             try:
                 print(f"The topic target is: {self.topic}")
                 future = await self.producer.send_and_wait(self.topic, response_message)

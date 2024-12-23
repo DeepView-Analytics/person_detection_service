@@ -1,6 +1,6 @@
 import os
 import time
-import asyncio
+
 import logging
 from typing import List, Tuple 
 import numpy as np
@@ -9,7 +9,8 @@ from io import BytesIO
 from PIL import Image
 import onnxruntime as ort
 import psutil
-from v1.bbox import Bbox
+from v3.bbox import BBox
+from v3.detected_person_metadata import DetectionMetadata
 
 
 # Configure logging
@@ -25,7 +26,7 @@ class PersonDetector:
         self.session = ort.InferenceSession(self.model_path)
 
     async def preprocess_images(self, bytearray_images: List[bytes], target_size: Tuple[int, int] = (640, 640)) -> Tuple[np.ndarray, List[float]]:
-        async def resize_image_with_padding(image: np.ndarray, target_size: Tuple[int, int]) -> Tuple[np.ndarray, float, Tuple[int, int]]:
+        def resize_image_with_padding(image: np.ndarray, target_size: Tuple[int, int]) -> Tuple[np.ndarray, float, Tuple[int, int]]:
             h, w = image.shape[:2]
             scale = min(target_size[0] / h, target_size[1] / w)
             nh, nw = int(h * scale), int(w * scale)
@@ -39,7 +40,7 @@ class PersonDetector:
         resized_images = []
         scales = []
         for img in images:
-            resized_img, scale, _ = await resize_image_with_padding(img, target_size)
+            resized_img, scale, _ = resize_image_with_padding(img, target_size)
             resized_images.append(resized_img)
             scales.append(scale)
 
@@ -49,13 +50,13 @@ class PersonDetector:
         return input_tensor, scales
 
     async def postprocess_person_detection(self, outputs, scales, confidence_threshold=0.4, person_class_id=0, iou_threshold=0.6):
-        def adjust_Bboxes(Bboxes: List[Bbox], scale: float) -> List[Bbox]:
-            return [Bbox(
+        def adjust_Bboxes(Bboxes: List[BBox], scale: float) -> List[BBox]:
+            return [BBox(
                 xmin=int(box.xmin / scale), ymin=int(box.ymin / scale),
                 xmax=int(box.xmax / scale), ymax=int(box.ymax / scale),
                 conf=box.conf) for box in Bboxes]
         
-        def calculate_iou(box1: Bbox, box2: Bbox) -> float:
+        def calculate_iou(box1: BBox, box2: BBox) -> float:
             x1, y1 = max(box1.xmin, box2.xmin), max(box1.ymin, box2.ymin)
             x2, y2 = min(box1.xmax, box2.xmax), min(box1.ymax, box2.ymax)
             inter_area = max(0, x2 - x1) * max(0, y2 - y1)
@@ -63,7 +64,7 @@ class PersonDetector:
             box2_area = (box2.xmax - box2.xmin) * (box2.ymax - box2.ymin)
             return inter_area / (box1_area + box2_area - inter_area) if (box1_area + box2_area - inter_area) > 0 else 0
 
-        def non_max_suppression(Bboxes: List[Bbox], iou_threshold: float) -> List[Bbox]:
+        def non_max_suppression(Bboxes: List[BBox], iou_threshold: float) -> List[BBox]:
             Bboxes = sorted(Bboxes, key=lambda x: x.conf, reverse=True)
             selected_Bboxes = []
             while Bboxes:
@@ -89,13 +90,14 @@ class PersonDetector:
                 confidence = class_scores[class_id]
 
                 if class_id == person_class_id and confidence >= confidence_threshold:
-                    detected_persons.append(Bbox(xmin=xmin, ymin=ymin, xmax=xmax, ymax=ymax, conf=confidence))
+                    detected_persons.append(BBox(xmin=xmin, ymin=ymin, xmax=xmax, ymax=ymax, conf=confidence))
 
             if detected_persons:
                 detected_persons = non_max_suppression(detected_persons, iou_threshold)
                 detected_persons = adjust_Bboxes(detected_persons, scales[batch_idx])
-
-            all_adjusted_Bboxes.append(detected_persons)
+            persons = [DetectionMetadata(bbox=bbox)for bbox in detected_persons]
+            for person in persons :print(f"person_type{type(person)}") 
+            all_adjusted_Bboxes.append(persons)
 
         return all_adjusted_Bboxes
 
