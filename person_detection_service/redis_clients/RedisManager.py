@@ -1,42 +1,59 @@
 import json
 import os
-import redis
 import time
-from typing import List, Dict , Any
+from typing import List, Dict, Any
+from rediscluster import ClusterError, RedisCluster, RedisClusterException 
 
 class RedisManager:
     def __init__(self, db=0, max_retries=5, backoff_factor=0.1):
-        self.client = redis.StrictRedis(
-            host=os.getenv('REDIS_SERVER', 'localhost'), 
-            port=os.getenv('REDIS_PORT', 6379), 
-            db=db
+        # Store the database prefix (e.g., "db0:", "db1:", etc.)
+        self.db_prefix = f"db{db}:"
+        startup_nodes = [
+            {"host": "localhost", "port": 7001}
+        ]
+        # Initialize RedisCluster client
+        self.client = RedisCluster(
+            startup_nodes=startup_nodes
         )
         self.max_retries = max_retries
         self.backoff_factor = backoff_factor
 
+    def _get_key_with_db_prefix(self, key: str) -> str:
+        """Concatenate the db prefix to the key."""
+        return self.db_prefix + key
+
     def save_one(self, key: str, value: Dict[str, Any]):
-        self.client.hset(key, mapping=value)
+        """Store a hash with fields and values in Redis Cluster."""
+        key_with_db = self._get_key_with_db_prefix(key)
+        self.client.hset(key_with_db, mapping=value)
 
     def get_one(self, key: str, field: str):
-        return self.client.hgetall(key)
+        """Retrieve a field value from a hash in Redis Cluster."""
+        key_with_db = self._get_key_with_db_prefix(key)
+        return self.client.hget(key_with_db, field)
 
     def save_many(self, keys: List[str], values: List[Dict[str, Any]]):
+        """Store multiple hashes in Redis Cluster."""
         with self.client.pipeline() as pipe:
             for key, value in zip(keys, values):
+                key_with_db = self._get_key_with_db_prefix(key)
                 # Serialize the dictionary to a JSON string
                 serialized_value = {field: json.dumps(v) for field, v in value.items()}
                 # Use HSET with serialized fields and values
                 for field, val in serialized_value.items():
-                    pipe.hset(key, field, val)
+                    pipe.hset(key_with_db, field, val)
             pipe.execute()
 
     def get_many(self, keys: List[str]):
+        """Retrieve multiple keys from Redis Cluster."""
         with self.client.pipeline() as pipe:
             for key in keys:
-                pipe.get(key)
+                key_with_db = self._get_key_with_db_prefix(key)
+                pipe.get(key_with_db)  # Retrieves all fields and values in a hash
             return pipe.execute()
 
-    def update_by_field_one(self, key: str, field: str, value):
+    def update_by_field_one(self, key: str, field: str, value: Any):
+        """Update a specific field in a hash using Lua script in Redis Cluster."""
         lua_script = """
         local key = KEYS[1]
         local field = ARGV[1]
@@ -45,32 +62,17 @@ class RedisManager:
         redis.call('HSET', key, field, value)
         return redis.call('HGET', key, field)
         """
+        key_with_db = self._get_key_with_db_prefix(key)
         script = self.client.register_script(lua_script)
         for attempt in range(self.max_retries):
             try:
-                return script(keys=[key], args=[field, value])
-            except redis.exceptions.WatchError:
+                return script(keys=[key_with_db], args=[field, value])
+            except RedisClusterException:
                 time.sleep(self.backoff_factor * (2 ** attempt))  # Exponential backoff
-        raise Exception(f"Failed to update field '{field}' in key '{key}' after {self.max_retries} attempts")
+        raise Exception(f"Failed to update field '{field}' in key '{key_with_db}' after {self.max_retries} attempts")
 
     def update_by_field_many(self, keys: List[str], field: str, values: List[str]):
-        db_index = self.client.connection_pool.connection_kwargs.get("db", 5)
-        print(f"Current Redis database: {db_index}")
-        for i ,key in enumerate(keys):
-            print(type(key))
-            print(len(key))
-            print(f"-{key}-")
-            print(f"Does 'metadatakey' exist? {self.client.exists(key)}")
-            ttl = self.client.ttl(key)
-            print(f"TTL for 'metadatakey': {ttl}")
-            key_type = self.client.type(key)
-            print(f"The type of 'key' {i} is: {key_type.decode()}")  # Output: hash
-        """
-        Update a specific field in multiple Redis hash keys.
-        :param keys: List of Redis hash keys.
-        :param field: The field to update.
-        :param values: List of values to set for the field.
-        """
+        """Update a specific field in multiple hashes using Lua script in Redis Cluster."""
         # Lua script for updating multiple fields
         lua_script = """
         for i, key in ipairs(KEYS) do
@@ -91,20 +93,21 @@ class RedisManager:
         # Retry mechanism
         for attempt in range(self.max_retries):
             try:
+                # Prepend the db prefix to the keys
+                keys_with_db = [self._get_key_with_db_prefix(key) for key in keys]
                 # Attempt to execute the Lua script
-                self.client.eval(lua_script, len(keys), *(keys + [field] + values))
+                self.client.eval(lua_script, len(keys_with_db), *(keys_with_db + [field] + values))
                 return  # Exit if the script executes successfully
-            except redis.exceptions.WatchError:
+            except RedisClusterException:
                 time.sleep(self.backoff_factor * (2 ** attempt))  # Exponential backoff
-            except redis.exceptions.RedisError as e:
+            except ClusterError as e:
                 print(f"Redis error during update: {e}")
                 raise
         # If retries are exhausted
         raise Exception(f"Failed to update field '{field}' in keys '{keys}' after {self.max_retries} attempts")
 
-
-
     def get_values_of_field_many(self, keys: List[str], field: str) -> List[str]:
+        """Retrieve field values from multiple hashes using Lua script in Redis Cluster."""
         lua_script = """
         local result = {}
         for i, key in ipairs(KEYS) do
@@ -112,7 +115,8 @@ class RedisManager:
         end
         return result
         """
+        # Prepend the db prefix to the keys
+        keys_with_db = [self._get_key_with_db_prefix(key) for key in keys]
         script = self.client.register_script(lua_script)
-        results = script(keys=keys, args=[field])
+        results = script(keys=keys_with_db, args=[field])
         return [result.decode('utf-8') for result in results if result]
-

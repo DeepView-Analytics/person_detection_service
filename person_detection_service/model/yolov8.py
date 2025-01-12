@@ -23,6 +23,7 @@ class PersonDetector:
         Initialize the PersonDetector with a YOLOv8 ONNX model.
         """
         self.model_path = os.getenv('MODEL_PATH', 'person_detection_service/model/yolov8s.onnx')
+        self.confidence_threshold = os.getenv('DETECTION_CONFIDANCE', 0.4)
         self.session = ort.InferenceSession(self.model_path)
 
     async def preprocess_images(self, bytearray_images: List[bytes], target_size: Tuple[int, int] = (640, 640)) -> Tuple[np.ndarray, List[float]]:
@@ -49,7 +50,7 @@ class PersonDetector:
 
         return input_tensor, scales
 
-    async def postprocess_person_detection(self, outputs, scales, confidence_threshold=0.4, person_class_id=0, iou_threshold=0.6):
+    async def postprocess_person_detection(self, outputs, scales, person_class_id=0, iou_threshold=0.6):
         def adjust_Bboxes(Bboxes: List[BBox], scale: float) -> List[BBox]:
             return [BBox(
                 xmin=int(box.xmin / scale), ymin=int(box.ymin / scale),
@@ -89,14 +90,14 @@ class PersonDetector:
                 class_id = np.argmax(class_scores)
                 confidence = class_scores[class_id]
 
-                if class_id == person_class_id and confidence >= confidence_threshold:
+                if class_id == person_class_id and confidence >= self.confidence_threshold:
                     detected_persons.append(BBox(xmin=xmin, ymin=ymin, xmax=xmax, ymax=ymax, conf=confidence))
 
             if detected_persons:
                 detected_persons = non_max_suppression(detected_persons, iou_threshold)
                 detected_persons = adjust_Bboxes(detected_persons, scales[batch_idx])
             persons = [DetectionMetadata(bbox=bbox)for bbox in detected_persons]
-            for person in persons :print(f"person_type{type(person)}") 
+
             all_adjusted_Bboxes.append(persons)
 
         return all_adjusted_Bboxes

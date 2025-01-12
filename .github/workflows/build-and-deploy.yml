@@ -3,7 +3,7 @@ name: Build and Push Docker Image for Person Detection Service
 on:
   push:
     branches:
-      - main
+      - prod
 
 permissions:
   packages: write

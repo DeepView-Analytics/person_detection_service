@@ -7,3 +7,5 @@ __pycache__/
 
 # Ignore the virtual environment directory
 psdetvenv/
+DevEnv/
+kubernetes/

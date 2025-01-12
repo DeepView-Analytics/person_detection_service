@@ -1,5 +1,5 @@
 # Use the base image
-FROM python:3.10-slim
+FROM python:3.11.3-slim
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE 1
@@ -21,8 +21,6 @@ RUN apt-get update && apt-get install -y git \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the .env file into the container
-COPY .env ./
 
 # Copy the entire project into the container
 COPY . .

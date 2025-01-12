@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  detection_service:
+    image: service_detection  # The image of your detection service
+    container_name: detection_service
+    environment:
+      - KAFKA_BOOTSTRAP_SERVERS=172.29.32.1:9092
+      - KAFKA_TOPIC_REQUESTS=person_detection_requests
+      - KAFKA_TOPIC_RESPONSES=person_detected_response
+      - REDIS_SERVER=172.29.32.1
+      - REDIS_PORT=7001
+      - RESPONSE_BATCH_SIZE=10
+    ports:
+      - "8000:8000"  
+
+
+

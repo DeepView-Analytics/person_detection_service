@@ -87,7 +87,6 @@ class KafkaProducerService:
         batchs = self.balance_batches(detections,max_bboxes_per_batch=self.max_bboxes_per_batch)
         print(f"len batchs = {len(batchs)}")
         for batch in batchs : 
-            print(len(batch))
             response_message = json.dumps([partition.model_dump() for partition in batch])
             try:
                 print(f"The topic target is: {self.topic}")
