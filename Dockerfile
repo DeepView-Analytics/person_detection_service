@@ -12,15 +12,13 @@ WORKDIR /app
 RUN pip install --upgrade pip
 
 # Install Git and clone the repository
-RUN apt-get update && apt-get install -y git \
+RUN apt-get update && apt-get install -y git ffmpeg libsm6 libxext6  \
     && git clone https://github.com/DeepView-Analytics/schemas.git /schemas \
     && pip install /schemas
 
 
 # Copy the requirements file and install dependencies
 COPY requirements.txt .
-
-RUN pip install opencv-python
 
 RUN pip install --no-cache-dir -r requirements.txt
 
