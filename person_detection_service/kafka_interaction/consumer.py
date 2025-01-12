@@ -5,7 +5,7 @@ from .producer import KafkaProducerService
 from ..model.yolov8 import PersonDetector
 
 class KafkaConsumerService:
-    def __init__(self, bootstrap_servers='192.168.111.131:9092', topic='person_detection_requests'):
+    def __init__(self, bootstrap_servers='localhost:9093', topic='person_detection_requests'):
 
         self.bootstrap_servers = bootstrap_servers
         self.topic = topic

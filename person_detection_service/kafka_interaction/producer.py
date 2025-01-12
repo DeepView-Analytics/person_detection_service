@@ -9,7 +9,7 @@ from v3.partitioneddetectionbatch import PartitionedDetectionBatch
 
 
 class KafkaProducerService:
-    def __init__(self, bootstrap_servers='127.0.0.1:9092', topic='person_detected_response'):
+    def __init__(self, bootstrap_servers='localhost:9093', topic='person_detected_response'):
         self.bootstrap_servers = bootstrap_servers
         self.topic = topic
         self.producer = None  # Initialize the producer as None

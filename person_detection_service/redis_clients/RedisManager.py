@@ -8,8 +8,11 @@ class RedisManager:
     def __init__(self, db=0, max_retries=5, backoff_factor=0.1):
         # Store the database prefix (e.g., "db0:", "db1:", etc.)
         self.db_prefix = f"db{db}:"
+        self.host = os.getenv('REDIS_SERVER', 'localhost')
+        self.port = os.getenv('REDIS_PORT', 7001)
+        print(self.host)
         startup_nodes = [
-            {"host": "localhost", "port": 7001}
+            {"host": self.host, "port": self.port}
         ]
         # Initialize RedisCluster client
         self.client = RedisCluster(
