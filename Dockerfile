@@ -20,6 +20,7 @@ RUN apt-get update && apt-get install -y \
     libtiff-dev \
     libv4l-dev \
     libdc1394-22-dev \
+    libgthread-2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
 # Install the repository from GitHub
