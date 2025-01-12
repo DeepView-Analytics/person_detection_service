@@ -11,30 +11,21 @@ WORKDIR /app
 # Upgrade pip to avoid compatibility issues
 RUN pip install --upgrade pip
 
-# Install necessary system dependencies for OpenCV and other packages
-RUN apt-get update && apt-get install -y \
-    git \
-    libgl1-mesa-glx \
-    libjpeg-dev \
-    libpng-dev \
-    libtiff-dev \
-    libv4l-dev \
-    libdc1394-22-dev \
-    libgthread-2.0-0 \
-    --no-install-recommends && rm -rf /var/lib/apt/lists/*
-
-# Install the repository from GitHub
-RUN git clone https://github.com/DeepView-Analytics/schemas.git /schemas \
+# Install Git and clone the repository
+RUN apt-get update && apt-get install -y git \
+    && git clone https://github.com/DeepView-Analytics/schemas.git /schemas \
     && pip install /schemas
 
-# Copy the requirements file and install Python dependencies
+
+# Copy the requirements file and install dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+
 
 # Copy the entire project into the container
 COPY . .
 
-# Expose the application ports
+# Expose the application port
 EXPOSE 8000
 EXPOSE 9092
 EXPOSE 6379
