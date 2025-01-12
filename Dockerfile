@@ -19,6 +19,9 @@ RUN apt-get update && apt-get install -y git \
 
 # Copy the requirements file and install dependencies
 COPY requirements.txt .
+
+RUN pip install opencv-python
+
 RUN pip install --no-cache-dir -r requirements.txt
 
 
