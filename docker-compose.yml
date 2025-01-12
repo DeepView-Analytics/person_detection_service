@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   detection_service:
-    image: service_detection  # The image of your detection service
+    image: faroukdaboussi0/person_detection_service:latest
     container_name: detection_service
     environment:
       - KAFKA_BOOTSTRAP_SERVERS=172.29.32.1:9092
