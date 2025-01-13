@@ -5,7 +5,7 @@ from .producer import KafkaProducerService
 from ..model.yolov8 import PersonDetector
 
 class KafkaConsumerService:
-    def __init__(self, bootstrap_servers='localhost:9093', topic='person_detection_requests'):
+    def __init__(self, bootstrap_servers, topic, producer):
 
         self.bootstrap_servers = bootstrap_servers
         self.topic = topic
@@ -14,7 +14,7 @@ class KafkaConsumerService:
         self.frames_metadata_manager_client = RedisManager(db=1)
         self.persons_metadata_manager_client = RedisManager(db=2)
         self.frames_data_manager_client = RedisManager(db=0)
-        self.producer = KafkaProducerService()
+        self.producer = producer
 
     async def start(self):
         self.consumer = AIOKafkaConsumer(

@@ -6,16 +6,16 @@ import uvicorn
 from contextlib import asynccontextmanager
 
 # Kafka configuration
-KAFKA_BOOTSTRAP_SERVERS = os.getenv('KAFKA_BOOTSTRAP_SERVERS', '127.0.0.1:9093')
+KAFKA_BOOTSTRAP_SERVERS = os.getenv('KAFKA_BOOTSTRAP_SERVERS', ['127.0.0.1:9092', '127.0.0.1:9093', '127.0.0.1:9094'])
 KAFKA_TOPIC_REQUESTS = os.getenv('KAFKA_TOPIC_REQUESTS', 'person_detection_requests')
 KAFKA_TOPIC_RESPONSES = os.getenv('KAFKA_TOPIC_RESPONSES', 'person_detected_response')  
 
-
+print(KAFKA_BOOTSTRAP_SERVERS)
 
 
 # Initialize Kafka Producer and Consumer
 producer = KafkaProducerService(bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS, topic=KAFKA_TOPIC_RESPONSES)
-consumer = KafkaConsumerService(bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS, topic=KAFKA_TOPIC_REQUESTS)
+consumer = KafkaConsumerService(bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS, topic=KAFKA_TOPIC_REQUESTS,producer=producer)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

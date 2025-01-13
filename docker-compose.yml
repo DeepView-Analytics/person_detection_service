@@ -5,7 +5,7 @@ services:
     image: faroukdaboussi0/person_detection_service:latest
     container_name: detection_service
     environment:
-      - KAFKA_BOOTSTRAP_SERVERS=172.29.32.1:9092
+      - KAFKA_BOOTSTRAP_SERVERS=kafka1:9092
       - KAFKA_TOPIC_REQUESTS=person_detection_requests
       - KAFKA_TOPIC_RESPONSES=person_detected_response
       - REDIS_SERVER=redis-1
@@ -15,7 +15,10 @@ services:
       - "8000:8000"  
     networks:
           - redis-graph_default 
+          - services-network
 networks:
   redis-graph_default  :
     external: true
+  services-network :
+    external: true  
 
