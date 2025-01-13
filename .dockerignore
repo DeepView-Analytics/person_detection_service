@@ -4,7 +4,7 @@ tests/
 # Ignore Python cache files and directories
 __pycache__/
 *.pyc
-
+*.env
 # Ignore the virtual environment directory
 psdetvenv/
 DevEnv/
