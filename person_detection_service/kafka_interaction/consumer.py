@@ -25,13 +25,12 @@ class KafkaConsumerService:
         )
         await self.consumer.start()
 
-        await self.producer.start()
-
         try:
             await self.consume_messages()
+            
         finally:
             await self.consumer.stop()
-            await self.producer.close()
+
 
     async def consume_messages(self):
         async for message in self.consumer:

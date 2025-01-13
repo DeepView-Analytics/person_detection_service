@@ -22,6 +22,7 @@ class KafkaProducerService:
                 bootstrap_servers=self.bootstrap_servers,
                 value_serializer=lambda v: v.encode('utf-8')
             )
+            print(self.bootstrap_servers)
             await self.producer.start()
         except Exception as e:
             logging.error(f"Failed to start Kafka producer: {e}", exc_info=True)
