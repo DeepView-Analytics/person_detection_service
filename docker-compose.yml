@@ -15,10 +15,8 @@ services:
       - "8000:8000"  
     networks:
           - redis-graph_default 
-          - services-network
+
 networks:
   redis-graph_default  :
     external: true
-  services-network :
-    external: true  
 
