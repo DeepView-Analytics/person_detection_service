@@ -1,7 +1,6 @@
 import json
 from aiokafka import AIOKafkaConsumer
 from person_detection_service.redis_clients.RedisManager import RedisManager
-from .producer import KafkaProducerService
 from ..model.yolov8 import PersonDetector
 
 class KafkaConsumerService:
